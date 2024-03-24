@@ -10,7 +10,6 @@ func main() {
 	//}
 	//fmt.Println(a1)
 	//fmt.Println(a1)
-
 	a2, err := Delete[int](arr, 5)
 	if err != nil {
 		return
