@@ -30,7 +30,7 @@ func NewUserHandler(service service.UserService) *UserHandler {
 func (u *UserHandler) Register(server *gin.Engine) {
 	ug := server.Group("/user")
 	ug.POST("/signup", u.SignUp)
-	ug.POST("/login")
+	ug.POST("/login", u.Login)
 }
 
 func (u *UserHandler) SignUp(ctx *gin.Context) {
@@ -44,4 +44,17 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(200, gin.H{"message": "success"})
+}
+
+func (u *UserHandler) Login(ctx *gin.Context) {
+	var user domain.User
+	if err := ctx.BindJSON(&user); err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	if _, err := u.service.Login(ctx, user.Email, user.Password); err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(200, gin.H{"message": "登陆成功"})
 }
