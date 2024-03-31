@@ -2,7 +2,9 @@ package web
 
 import (
 	regexp "github.com/dlclark/regexp2"
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"net/http"
 	"webook/internal/domain"
 	"webook/internal/service"
 )
@@ -40,10 +42,10 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 		return
 	}
 	if err := u.service.Signup(ctx, user); err != nil {
-		ctx.JSON(500, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(200, gin.H{"message": "success"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
 func (u *UserHandler) Login(ctx *gin.Context) {
@@ -52,9 +54,13 @@ func (u *UserHandler) Login(ctx *gin.Context) {
 		ctx.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	if _, err := u.service.Login(ctx, user.Email, user.Password); err != nil {
-		ctx.JSON(500, gin.H{"error": err.Error()})
+	us, err := u.service.Login(ctx, user.Email, user.Password)
+	if err != nil {
+		ctx.JSON(http.StatusOK, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(200, gin.H{"message": "登陆成功"})
+	ssId := sessions.Default(ctx)
+	ssId.Set("userId", us.Id)
+	ssId.Save()
+	ctx.JSON(http.StatusOK, gin.H{"message": "登陆成功"})
 }

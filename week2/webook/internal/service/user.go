@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"webook/internal/domain"
+	error2 "webook/internal/error"
 	"webook/internal/repository"
 )
 
@@ -39,7 +41,7 @@ func (svc *userService) Login(ctx context.Context, email, password string) (doma
 	// check password
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		return domain.User{}, err
+		return domain.User{}, error2.WrapError(errors.New("用户名或密码错误"), error2.IncorrectUserNameOrPassword)
 	}
 	return u, nil
 }

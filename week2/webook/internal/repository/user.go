@@ -2,7 +2,9 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"webook/internal/domain"
+	error2 "webook/internal/error"
 	"webook/internal/repository/dao"
 )
 
@@ -25,6 +27,9 @@ func (repo *CachedUserRepository) Create(ctx context.Context, u domain.User) err
 
 func (repo *CachedUserRepository) FindByEmail(ctx context.Context, email string) (domain.User, error) {
 	u, err := repo.dao.FindByEmail(ctx, email)
+	if errors.Is(err, dao.ErrRecordNotFound) {
+		return domain.User{}, error2.WrapError(errors.New("用户名或密码错误"), error2.IncorrectUserNameOrPassword)
+	}
 	if err != nil {
 		return domain.User{}, err
 	}
