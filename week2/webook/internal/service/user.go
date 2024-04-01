@@ -2,16 +2,18 @@ package service
 
 import (
 	"context"
-	"errors"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
+	"webook/internal/bizerror"
 	"webook/internal/domain"
-	error2 "webook/internal/error"
 	"webook/internal/repository"
 )
 
 type UserService interface {
 	Signup(ctx context.Context, u domain.User) error
 	Login(ctx context.Context, email, password string) (domain.User, error)
+	UpdateUserInfo(ctx *gin.Context, u domain.User) error
+	FindById(ctx *gin.Context, uid int64) (domain.User, error)
 }
 type userService struct {
 	repo repository.UserRepository
@@ -41,7 +43,19 @@ func (svc *userService) Login(ctx context.Context, email, password string) (doma
 	// check password
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		return domain.User{}, error2.WrapError(errors.New("用户名或密码错误"), error2.IncorrectUserNameOrPassword)
+		return domain.User{}, bizerror.New(bizerror.IncorrectUserNameOrPassword, "用户名或密码错误", err.Error())
 	}
 	return u, nil
+}
+
+func (svc *userService) UpdateUserInfo(ctx *gin.Context, u domain.User) error {
+	err := svc.repo.UpdateUserInfo(ctx, u)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (svc *userService) FindById(ctx *gin.Context, uid int64) (domain.User, error) {
+	return svc.repo.FindById(ctx, uid)
 }
