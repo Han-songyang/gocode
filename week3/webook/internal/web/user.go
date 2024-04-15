@@ -6,7 +6,6 @@ import (
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/spf13/cast"
 	"net/http"
 	"time"
 	"webook/internal/domain"
@@ -92,6 +91,9 @@ func (u *UserHandler) LoginJWT(ctx *gin.Context) {
 	}
 	uc := UserClaims{
 		Uid: us.Id,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute)),
+		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
 	tokenStr, err := token.SignedString(JWTKey)
@@ -139,10 +141,8 @@ func (u *UserHandler) edit(ctx *gin.Context) {
 }
 
 func (u *UserHandler) ProfileSess(ctx *gin.Context) {
-	id, _ := ctx.Get("userId")
-	uid := cast.ToInt64(id)
-
-	user, err := u.service.FindById(ctx, uid)
+	uc, _ := ctx.MustGet("user").(UserClaims)
+	user, err := u.service.FindById(ctx, uc.Uid)
 	if err != nil {
 		ctx.String(http.StatusOK, "系统错误")
 	}

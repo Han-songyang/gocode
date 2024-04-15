@@ -1,16 +1,17 @@
 package main
 
 import (
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"time"
 	"webook/internal/repository"
 	"webook/internal/repository/dao"
 	"webook/internal/service"
 	"webook/internal/web"
 	"webook/internal/web/middleware"
+	"webook/pkg/ginx/middleware/ratelimit"
 )
 
 func main() {
@@ -34,6 +35,10 @@ func initDB() *gorm.DB {
 
 func initWebServer() *gin.Engine {
 	server := gin.Default()
+	redisClind := redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+	})
+	server.Use(ratelimit.NewBuilder(redisClind, time.Second, 1).Build())
 	//server.Use(cors.New(cors.Config{
 	//	AllowCredentials: true,
 	//	AllowHeaders:     []string{"Content-Type"},
@@ -45,20 +50,26 @@ func initWebServer() *gin.Engine {
 	//	},
 	//	MaxAge:           12 * time.Hour,
 	//}))
-	loginSession(server)
+	//useSession(server)
+	useJWT(server)
 	return server
 }
 
-func loginSession(server *gin.Engine) {
-	login := middleware.LoginMiddlewareBuild{}
-	store, err := redis.NewStore(16, "tcp", "localhost:6379",
-		"", []byte("xtpTacFeR4oDNWap"),
-		[]byte("cfR5BdYotg7n8QOM"))
-	if err != nil {
-		panic(err)
-	}
-	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
+func useJWT(server *gin.Engine) {
+	login := middleware.LoginJWTMiddlewareBuild{}
+	server.Use(login.CheckLogin())
 }
+
+//func useSession(server *gin.Engine) {
+//	login := middleware.LoginMiddlewareBuild{}
+//	store, err := redis.NewStore(16, "tcp", "localhost:6379",
+//		"", []byte("xtpTacFeR4oDNWap"),
+//		[]byte("cfR5BdYotg7n8QOM"))
+//	if err != nil {
+//		panic(err)
+//	}
+//	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
+//}
 
 func initUser(server *gin.Engine, db *gorm.DB) {
 	ud := dao.NewUserDAO(db)
