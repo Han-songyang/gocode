@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook-service
+spec:
+  # 三个副本
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webook
+  template:
+    metadata:
+      # labels 要和前面的 matchLabels 匹配
+      labels:
+        app: webook
+    # Deployment 管理的所有Pod的模板
+    spec:
+      containers:
+        - name: webook
+          image: han0426/webook:v0.2
+          ports:
+            - containerPort: 8080
+

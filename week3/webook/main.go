@@ -53,6 +53,7 @@ func initWebServer() *gin.Engine {
 	//useSession(server)
 	useJWT(server)
 	return server
+
 }
 
 func useJWT(server *gin.Engine) {
