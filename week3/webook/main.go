@@ -15,10 +15,17 @@ import (
 )
 
 func main() {
-	db := initDB()
-	server := initWebServer()
-	initUser(server, db)
-	_ = server.Run(":8080")
+	//db := initDB()
+	//server := initWebServer()
+	//initUser(server, db)
+	//_ = server.Run(":8080")
+	s := gin.Default()
+	s.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	s.Run(":8080")
 }
 
 func initDB() *gorm.DB {

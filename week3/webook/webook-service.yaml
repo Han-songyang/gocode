@@ -6,8 +6,9 @@ spec:
   selector:
     app: webook
   ports:
-    - protocol: TCP
+    - name: http
       port: 88
       targetPort: 8080
+      protocol: TCP
   type: LoadBalancer
   
