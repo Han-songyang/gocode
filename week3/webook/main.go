@@ -6,6 +6,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"time"
+	"webook/config"
 	"webook/internal/repository"
 	"webook/internal/repository/dao"
 	"webook/internal/service"
@@ -15,21 +16,14 @@ import (
 )
 
 func main() {
-	//db := initDB()
-	//server := initWebServer()
-	//initUser(server, db)
-	//_ = server.Run(":8080")
-	s := gin.Default()
-	s.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	s.Run(":8080")
+	db := initDB()
+	server := initWebServer()
+	initUser(server, db)
+	_ = server.Run(":8081")
 }
 
 func initDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open("root:root@tcp(localhost:3306)/webook"), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}
@@ -43,7 +37,7 @@ func initDB() *gorm.DB {
 func initWebServer() *gin.Engine {
 	server := gin.Default()
 	redisClind := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379",
+		Addr: config.Config.Redis.Addr,
 	})
 	server.Use(ratelimit.NewBuilder(redisClind, time.Second, 1).Build())
 	//server.Use(cors.New(cors.Config{

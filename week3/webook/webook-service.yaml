@@ -7,7 +7,7 @@ spec:
     app: webook
   ports:
     - protocol: TCP
-      port: 98
-      targetPort: 8080
+      port: 99
+      targetPort: 8081
   type: ClusterIP
   

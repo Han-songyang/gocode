@@ -4,7 +4,7 @@ metadata:
   name: webook-service
 spec:
   # 三个副本
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: webook
@@ -19,5 +19,5 @@ spec:
         - name: webook
           image: han0426/webook:v0.2
           ports:
-            - containerPort: 8080
+            - containerPort: 8081
 

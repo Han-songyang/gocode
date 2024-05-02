@@ -36,6 +36,10 @@ func NewUserHandler(service service.UserService) *UserHandler {
 
 func (u *UserHandler) Register(server *gin.Engine) {
 	ug := server.Group("/user")
+
+	ug.GET("/ping", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK, gin.H{"message": "pong"})
+	})
 	ug.POST("/signup", u.SignUp)
 	//ug.POST("/login", u.Login)
 	ug.POST("/login", u.LoginJWT)
