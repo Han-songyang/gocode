@@ -16,6 +16,7 @@ type UserCache struct {
 
 func (c *UserCache) Get(ctx *gin.Context, uid int64) (domain.User, error) {
 	key := c.key(uid)
+	fmt.Println("key:", key)
 	data, err := c.cmd.Get(ctx, key).Result()
 	if err != nil {
 		return domain.User{}, err

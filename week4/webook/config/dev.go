@@ -1,5 +1,3 @@
-//go:build !k8s
-
 package config
 
 var Config = config{

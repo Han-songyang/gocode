@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"webook/internal/bizerror"
@@ -14,6 +15,7 @@ type UserService interface {
 	Login(ctx context.Context, email, password string) (domain.User, error)
 	UpdateUserInfo(ctx *gin.Context, u domain.User) error
 	FindById(ctx *gin.Context, uid int64) (domain.User, error)
+	FindOrCreate(ctx *gin.Context, phone string) (domain.User, error)
 }
 type userService struct {
 	repo repository.UserRepository
@@ -25,6 +27,7 @@ func NewUserService(repo repository.UserRepository) UserService {
 		//logger: zap.L(),
 	}
 }
+
 func (svc *userService) Signup(ctx context.Context, u domain.User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -58,4 +61,21 @@ func (svc *userService) UpdateUserInfo(ctx *gin.Context, u domain.User) error {
 
 func (svc *userService) FindById(ctx *gin.Context, uid int64) (domain.User, error) {
 	return svc.repo.FindById(ctx, uid)
+}
+
+func (svc *userService) FindOrCreate(ctx *gin.Context, phone string) (domain.User, error) {
+	// 是否已经注册
+	u, err := svc.repo.FindByPhone(ctx, phone)
+	if !errors.Is(err, repository.ErrUserNotFound) {
+		return u, nil
+	}
+
+	// 没有注册，创建用户
+	err = svc.repo.Create(ctx, domain.User{
+		Phone: phone,
+	})
+	if err != nil && !errors.Is(err, repository.ErrDuplicateUser) {
+		return domain.User{}, err
+	}
+	return svc.repo.FindByPhone(ctx, phone)
 }

@@ -1,10 +1,14 @@
 package domain
 
+import "time"
+
 type User struct {
-	Id       int64  `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Nickname string `json:"nickname"`
-	Birthday string `json:"birthday"`
-	AboutMe  string `json:"aboutMe"`
+	Id       int64
+	Email    string
+	Password string
+	Nickname string
+	Birthday time.Time
+	AboutMe  string
+	Phone    string
+	Ctime    time.Time // UTC 0 的时区
 }
