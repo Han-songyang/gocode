@@ -4,7 +4,7 @@
 //go:build !wireinject
 // +build !wireinject
 
-package main
+package startup
 
 import (
 	"github.com/gin-gonic/gin"
@@ -19,7 +19,7 @@ import (
 // Injectors from wire.go:
 
 func InitWebServer() *gin.Engine {
-	cmdable := ioc.InitRedis()
+	cmdable := InitRedis()
 	v := ioc.InitGinMiddlewares(cmdable)
 	db := ioc.InitDB()
 	userDAO := dao.NewUserDAO(db)

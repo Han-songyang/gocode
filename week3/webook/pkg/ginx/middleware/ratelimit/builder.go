@@ -24,7 +24,7 @@ var luaScript string
 func NewBuilder(cmd redis.Cmdable, interval time.Duration, rate int) *Builder {
 	return &Builder{
 		cmd:      cmd,
-		prefix:   "ip-limiter",
+		prefix:   "ip-limitsms",
 		interval: interval,
 		rate:     rate,
 	}

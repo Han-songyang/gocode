@@ -9,6 +9,8 @@ import (
 	"webook/internal/domain"
 )
 
+var ErrKeyNotExist = redis.Nil
+
 type UserCache interface {
 	Get(ctx context.Context, uid int64) (domain.User, error)
 	Set(ctx context.Context, du domain.User) error
@@ -44,8 +46,8 @@ func (c *RedisUserCache) key(uid int64) string {
 	return fmt.Sprintf("user:info:%d", uid)
 }
 
-func NewUserCache(cmd redis.Cmdable) RedisUserCache {
-	return RedisUserCache{
+func NewUserCache(cmd redis.Cmdable) UserCache {
+	return &RedisUserCache{
 		cmd:        cmd,
 		expiration: time.Minute * 15,
 	}

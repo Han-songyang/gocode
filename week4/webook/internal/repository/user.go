@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/gin-gonic/gin"
+	"log"
 	"time"
 	"webook/internal/bizerror"
 	"webook/internal/domain"
@@ -20,23 +20,23 @@ var (
 type UserRepository interface {
 	Create(ctx context.Context, u domain.User) error
 	FindByEmail(ctx context.Context, email string) (domain.User, error)
-	UpdateUserInfo(ctx *gin.Context, u domain.User) error
-	FindById(ctx *gin.Context, uid int64) (domain.User, error)
-	FindByPhone(ctx *gin.Context, phone string) (domain.User, error)
+	UpdateUserInfo(ctx context.Context, u domain.User) error
+	FindById(ctx context.Context, uid int64) (domain.User, error)
+	FindByPhone(ctx context.Context, phone string) (domain.User, error)
 }
 type CachedUserRepository struct {
 	dao   dao.UserDAO
-	cache cache.RedisUserCache
+	cache cache.UserCache
 }
 
-func NewCachedUserRepository(d dao.UserDAO, c cache.RedisUserCache) UserRepository {
+func NewCachedUserRepository(d dao.UserDAO, c cache.UserCache) UserRepository {
 	return &CachedUserRepository{
 		dao:   d,
 		cache: c,
 	}
 }
 
-func (repo *CachedUserRepository) FindByPhone(ctx *gin.Context, phone string) (domain.User, error) {
+func (repo *CachedUserRepository) FindByPhone(ctx context.Context, phone string) (domain.User, error) {
 	u, err := repo.dao.FindByPhone(ctx, phone)
 	if err != nil {
 		return domain.User{}, err
@@ -59,7 +59,7 @@ func (repo *CachedUserRepository) FindByEmail(ctx context.Context, email string)
 	return repo.toDomain(u), nil
 }
 
-func (repo *CachedUserRepository) UpdateUserInfo(ctx *gin.Context, u domain.User) error {
+func (repo *CachedUserRepository) UpdateUserInfo(ctx context.Context, u domain.User) error {
 	err := repo.dao.UpdateById(ctx, repo.toEntity(u))
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (repo *CachedUserRepository) UpdateUserInfo(ctx *gin.Context, u domain.User
 	return nil
 }
 
-func (repo *CachedUserRepository) FindById(ctx *gin.Context, uid int64) (domain.User, error) {
+func (repo *CachedUserRepository) FindById(ctx context.Context, uid int64) (domain.User, error) {
 	du, err := repo.cache.Get(ctx, uid)
 	if err == nil {
 		return du, nil
@@ -78,7 +78,11 @@ func (repo *CachedUserRepository) FindById(ctx *gin.Context, uid int64) (domain.
 	}
 	du = repo.toDomain(u)
 	err = repo.cache.Set(ctx, du)
-	return du, err
+	if err != nil {
+		// redis 坏了
+		log.Println(err)
+	}
+	return du, nil
 }
 
 func (repo *CachedUserRepository) toDomain(u dao.User) domain.User {
@@ -90,6 +94,7 @@ func (repo *CachedUserRepository) toDomain(u dao.User) domain.User {
 		AboutMe:  u.AboutMe,
 		Nickname: u.Nickname,
 		Birthday: time.UnixMilli(u.Birthday),
+		Ctime:    time.UnixMilli(u.CreatedAt),
 	}
 }
 

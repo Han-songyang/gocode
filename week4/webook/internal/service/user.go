@@ -5,9 +5,13 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-	"webook/internal/bizerror"
 	"webook/internal/domain"
 	"webook/internal/repository"
+)
+
+var (
+	ErrDuplicateEmail        = repository.ErrDuplicateUser
+	ErrInvalidUserOrPassword = errors.New("用户不存在或者密码不对")
 )
 
 type UserService interface {
@@ -39,6 +43,9 @@ func (svc *userService) Signup(ctx context.Context, u domain.User) error {
 
 func (svc *userService) Login(ctx context.Context, email, password string) (domain.User, error) {
 	u, err := svc.repo.FindByEmail(ctx, email)
+	if errors.Is(err, repository.ErrUserNotFound) {
+		return domain.User{}, ErrInvalidUserOrPassword
+	}
 	if err != nil {
 		return domain.User{}, err
 	}
@@ -46,7 +53,7 @@ func (svc *userService) Login(ctx context.Context, email, password string) (doma
 	// check password
 	err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		return domain.User{}, bizerror.New(bizerror.IncorrectUserNameOrPassword, "用户名或密码错误", err.Error())
+		return domain.User{}, ErrInvalidUserOrPassword
 	}
 	return u, nil
 }
