@@ -5,6 +5,7 @@ package startup
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	ijwt "webook/internal/web/jwt"
 
 	"webook/internal/repository"
 	"webook/internal/repository/cache"
@@ -17,7 +18,7 @@ import (
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		// 第三方依赖
-		ioc.InitDB, InitRedis,
+		ioc.InitDB, InitRedis, ioc.InitLogger(),
 
 		// dao
 		dao.NewUserDAO,
@@ -29,10 +30,10 @@ func InitWebServer() *gin.Engine {
 		repository.NewCachedUserRepository, repository.NewCodeRepository,
 
 		// service
-		ioc.InitSms, service.NewUserService, service.NewCodeService,
+		ioc.InitSms, service.NewUserService, service.NewCodeService, ioc.InitWechatService,
 
 		// handler
-		web.NewUserHandler,
+		web.NewUserHandler, web.NewOAuth2WechatHandler, ijwt.NewRedisJWTHandler,
 
 		// web
 		ioc.InitGinMiddlewares, ioc.InitWebServer,

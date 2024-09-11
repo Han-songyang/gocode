@@ -1,70 +1,68 @@
 package middleware
 
 import (
-	"encoding/gob"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"net/http"
-	"strings"
-	"time"
-	"webook/internal/web"
+	ijwt "webook/internal/web/jwt"
 )
 
-type LoginJWTMiddlewareBuild struct {
+type LoginJWTMiddlewareBuilder struct {
+	ijwt.Handler
 }
 
-func (m *LoginJWTMiddlewareBuild) CheckLogin() gin.HandlerFunc {
-	gob.Register(time.Now())
+func NewLoginJWTMiddlewareBuilder(hdl ijwt.Handler) *LoginJWTMiddlewareBuilder {
+	return &LoginJWTMiddlewareBuilder{
+		Handler: hdl,
+	}
+}
+
+func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		path := ctx.Request.URL.Path
 		if path == "/users/signup" ||
 			path == "/users/login" ||
+			path == "/users/login_sms/code/send" ||
 			path == "/users/login_sms" ||
-			path == "/users/login_sms/code/send" {
+			path == "/oauth2/wechat/authurl" ||
+			path == "/oauth2/wechat/callback" {
+			// 不需要登录校验
 			return
 		}
-		authCode := ctx.GetHeader("Authorization")
-		if authCode == "" {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "请先登录"})
-			return
-		}
-		authSeg := strings.Split(authCode, " ")
-		if len(authSeg) != 2 {
-			ctx.AbortWithStatus(http.StatusUnauthorized)
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "token格式错误"})
-			return
-		}
-		tokenStr := authSeg[1]
-		uc := web.UserClaims{}
+		tokenStr := m.ExtractToken(ctx)
+		var uc ijwt.UserClaims
 		token, err := jwt.ParseWithClaims(tokenStr, &uc, func(token *jwt.Token) (interface{}, error) {
-			return web.JWTKey, nil
+			return ijwt.JWTKey, nil
 		})
 		if err != nil {
+			// token 不对，token 是伪造的
 			ctx.AbortWithStatus(http.StatusUnauthorized)
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "token解析错误"})
 			return
 		}
-
-		// 刷新token
 		if token == nil || !token.Valid {
-			// token非法，或者过期
+			// 在这里发现 access_token 过期了，生成一个新的 access_token
+
+			// token 解析出来了，但是 token 可能是非法的，或者过期了的
 			ctx.AbortWithStatus(http.StatusUnauthorized)
-			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "token非法，或者过期"})
 			return
 		}
 
-		expireTime := uc.ExpiresAt
-		// 每10秒刷新一次token，当前过期时间是1min，过期时间小于50s时刷新token
-		if expireTime.Sub(time.Now()) < 50*time.Second {
-			uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute))
-			tokenStr, err = token.SignedString(web.JWTKey)
-			if err != nil {
-				fmt.Println("token刷新失败")
-			}
-			ctx.Header("x-jwt-token", tokenStr)
+		// 判断是否登出
+		err = m.CheckSession(ctx, uc.Ssid)
+		if err != nil {
+			// token 无效或者 redis 有问题
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
+
+		// 可以兼容 Redis 异常的情况
+		// 做好监控，监控有没有 error
+		//if cnt > 0 {
+		//	// token 无效或者 redis 有问题
+		//	ctx.AbortWithStatus(http.StatusUnauthorized)
+		//	return
+		//}
+
 		ctx.Set("user", uc)
 	}
 }

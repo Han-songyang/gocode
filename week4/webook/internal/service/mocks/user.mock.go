@@ -14,7 +14,6 @@ import (
 	reflect "reflect"
 	domain "webook/internal/domain"
 
-	gin "github.com/gin-gonic/gin"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,7 +41,7 @@ func (m *MockUserService) EXPECT() *MockUserServiceMockRecorder {
 }
 
 // FindById mocks base method.
-func (m *MockUserService) FindById(ctx *gin.Context, uid int64) (domain.User, error) {
+func (m *MockUserService) FindById(ctx context.Context, uid int64) (domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindById", ctx, uid)
 	ret0, _ := ret[0].(domain.User)
@@ -57,7 +56,7 @@ func (mr *MockUserServiceMockRecorder) FindById(ctx, uid any) *gomock.Call {
 }
 
 // FindOrCreate mocks base method.
-func (m *MockUserService) FindOrCreate(ctx *gin.Context, phone string) (domain.User, error) {
+func (m *MockUserService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindOrCreate", ctx, phone)
 	ret0, _ := ret[0].(domain.User)
@@ -69,6 +68,21 @@ func (m *MockUserService) FindOrCreate(ctx *gin.Context, phone string) (domain.U
 func (mr *MockUserServiceMockRecorder) FindOrCreate(ctx, phone any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreate", reflect.TypeOf((*MockUserService)(nil).FindOrCreate), ctx, phone)
+}
+
+// FindOrCreateByWechat mocks base method.
+func (m *MockUserService) FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FindOrCreateByWechat", ctx, info)
+	ret0, _ := ret[0].(domain.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FindOrCreateByWechat indicates an expected call of FindOrCreateByWechat.
+func (mr *MockUserServiceMockRecorder) FindOrCreateByWechat(ctx, info any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindOrCreateByWechat", reflect.TypeOf((*MockUserService)(nil).FindOrCreateByWechat), ctx, info)
 }
 
 // Login mocks base method.
@@ -101,7 +115,7 @@ func (mr *MockUserServiceMockRecorder) Signup(ctx, u any) *gomock.Call {
 }
 
 // UpdateUserInfo mocks base method.
-func (m *MockUserService) UpdateUserInfo(ctx *gin.Context, u domain.User) error {
+func (m *MockUserService) UpdateUserInfo(ctx context.Context, u domain.User) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUserInfo", ctx, u)
 	ret0, _ := ret[0].(error)

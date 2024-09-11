@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 	"webook/internal/domain"
 	"webook/internal/repository"
@@ -17,9 +16,10 @@ var (
 type UserService interface {
 	Signup(ctx context.Context, u domain.User) error
 	Login(ctx context.Context, email, password string) (domain.User, error)
-	UpdateUserInfo(ctx *gin.Context, u domain.User) error
-	FindById(ctx *gin.Context, uid int64) (domain.User, error)
-	FindOrCreate(ctx *gin.Context, phone string) (domain.User, error)
+	UpdateUserInfo(ctx context.Context, u domain.User) error
+	FindById(ctx context.Context, uid int64) (domain.User, error)
+	FindOrCreate(ctx context.Context, phone string) (domain.User, error)
+	FindOrCreateByWechat(ctx context.Context, info domain.WechatInfo) (domain.User, error)
 }
 type userService struct {
 	repo repository.UserRepository
@@ -58,7 +58,7 @@ func (svc *userService) Login(ctx context.Context, email, password string) (doma
 	return u, nil
 }
 
-func (svc *userService) UpdateUserInfo(ctx *gin.Context, u domain.User) error {
+func (svc *userService) UpdateUserInfo(ctx context.Context, u domain.User) error {
 	err := svc.repo.UpdateUserInfo(ctx, u)
 	if err != nil {
 		return err
@@ -66,11 +66,11 @@ func (svc *userService) UpdateUserInfo(ctx *gin.Context, u domain.User) error {
 	return nil
 }
 
-func (svc *userService) FindById(ctx *gin.Context, uid int64) (domain.User, error) {
+func (svc *userService) FindById(ctx context.Context, uid int64) (domain.User, error) {
 	return svc.repo.FindById(ctx, uid)
 }
 
-func (svc *userService) FindOrCreate(ctx *gin.Context, phone string) (domain.User, error) {
+func (svc *userService) FindOrCreate(ctx context.Context, phone string) (domain.User, error) {
 	// 是否已经注册
 	u, err := svc.repo.FindByPhone(ctx, phone)
 	if !errors.Is(err, repository.ErrUserNotFound) {
@@ -85,4 +85,21 @@ func (svc *userService) FindOrCreate(ctx *gin.Context, phone string) (domain.Use
 		return domain.User{}, err
 	}
 	return svc.repo.FindByPhone(ctx, phone)
+}
+
+func (svc *userService) FindOrCreateByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error) {
+	u, err := svc.repo.FindByWechat(ctx, wechatInfo.OpenId)
+	if err != repository.ErrUserNotFound {
+		return u, err
+	}
+	// 这边就是意味着是一个新用户
+	// JSON 格式的 wechatInfo
+	//svc.logger.Info("新用户", zap.Any("wechatInfo", wechatInfo))
+	err = svc.repo.Create(ctx, domain.User{
+		WechatInfo: wechatInfo,
+	})
+	if err != nil && err != repository.ErrDuplicateUser {
+		return domain.User{}, err
+	}
+	return svc.repo.FindByWechat(ctx, wechatInfo.OpenId)
 }
