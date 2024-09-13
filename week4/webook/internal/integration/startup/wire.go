@@ -15,28 +15,57 @@ import (
 	"webook/ioc"
 )
 
+var thirdPartySet = wire.NewSet( // 第三方依赖
+	InitRedis, InitDB,
+	InitLogger)
+
+var userSvcProvider = wire.NewSet(
+	dao.NewUserDAO,
+	cache.NewUserCache,
+	repository.NewCachedUserRepository,
+	service.NewUserService)
+
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		// 第三方依赖
-		ioc.InitDB, InitRedis, ioc.InitLogger(),
-
-		// dao
+		InitRedis, InitDB,
+		ioc.InitLogger,
+		// DAO 部分
 		dao.NewUserDAO,
+		dao.NewArticleGORMDAO,
 
-		// cache
+		// cache 部分
 		cache.NewRedisCodeCache, cache.NewUserCache,
 
-		// repository
-		repository.NewCachedUserRepository, repository.NewCodeRepository,
+		// repository 部分
+		repository.NewCachedUserRepository,
+		repository.NewCodeRepository,
+		repository.NewCachedArticleRepository,
 
-		// service
-		ioc.InitSms, service.NewUserService, service.NewCodeService, ioc.InitWechatService,
+		// Service 部分
+		ioc.InitSms,
+		ioc.InitWechatService,
+		service.NewUserService,
+		service.NewCodeService,
+		service.NewArticleService,
 
-		// handler
-		web.NewUserHandler, web.NewOAuth2WechatHandler, ijwt.NewRedisJWTHandler,
-
-		// web
-		ioc.InitGinMiddlewares, ioc.InitWebServer,
+		// handler 部分
+		web.NewUserHandler,
+		web.NewArticleHandler,
+		ijwt.NewRedisJWTHandler,
+		web.NewOAuth2WechatHandler,
+		ioc.InitGinMiddlewares,
+		ioc.InitWebServer,
 	)
 	return gin.Default()
+}
+
+func InitArticleHandler(dao dao.ArticleDAO) *web.ArticleHandler {
+	wire.Build(
+		thirdPartySet,
+		//userSvcProvider,
+		repository.NewCachedArticleRepository,
+		service.NewArticleService,
+		web.NewArticleHandler)
+	return &web.ArticleHandler{}
 }
