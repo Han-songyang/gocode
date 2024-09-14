@@ -11,6 +11,7 @@ import (
 type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
 	Publish(ctx context.Context, art domain.Article) (int64, error)
+	Withdraw(ctx context.Context, uid int64, id int64) error
 	//Withdraw(ctx context.Context, uid int64, id int64) error
 	//GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	//GetById(ctx context.Context, id int64) (domain.Article, error)
@@ -42,7 +43,7 @@ func NewArticleServiceV1(
 	}
 }
 
-func (a articleService) Save(ctx context.Context, art domain.Article) (int64, error) {
+func (a *articleService) Save(ctx context.Context, art domain.Article) (int64, error) {
 	art.Status = domain.ArticleStatusUnpublished
 	if art.Id > 0 {
 		err := a.repo.Update(ctx, art)
@@ -51,12 +52,12 @@ func (a articleService) Save(ctx context.Context, art domain.Article) (int64, er
 	return a.repo.Create(ctx, art)
 }
 
-func (a articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
+func (a *articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
 	art.Status = domain.ArticleStatusPublished
 	return a.repo.Sync(ctx, art)
 }
 
-func (a articleService) PublishV1(ctx context.Context, art domain.Article) (int64, error) {
+func (a *articleService) PublishV1(ctx context.Context, art domain.Article) (int64, error) {
 	// 想到这里要先操作制作库
 	// 这里操作线上库
 	var (
@@ -90,4 +91,8 @@ func (a articleService) PublishV1(ctx context.Context, art domain.Article) (int6
 		logger.Int64("aid", art.Id),
 		logger.Error(err))
 	return id, errors.New("保存到线上库失败，重试次数耗尽")
+}
+
+func (a *articleService) Withdraw(ctx context.Context, uid int64, id int64) error {
+	return a.repo.SyncStatus(ctx, uid, id, domain.ArticleStatusPrivate)
 }

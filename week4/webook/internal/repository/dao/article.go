@@ -12,6 +12,7 @@ type ArticleDAO interface {
 	Insert(ctx context.Context, art Article) (int64, error)
 	UpdateById(ctx context.Context, art Article) error
 	Sync(ctx context.Context, art Article) (int64, error)
+	SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
 	//SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
 	//GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]Article, error)
 	//GetById(ctx context.Context, id int64) (Article, error)
@@ -93,6 +94,30 @@ func (a *ArticleGORMDAO) Sync(ctx context.Context, art Article) (int64, error) {
 		return err
 	})
 	return id, err
+}
+
+func (a *ArticleGORMDAO) SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error {
+	now := time.Now().UnixMilli()
+	return a.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		res := tx.Model(&Article{}).
+			Where("id = ? and author_id = ?", id, uid).
+			Updates(map[string]any{
+				"utime":  now,
+				"status": status,
+			})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected != 1 {
+			return errors.New("ID 不对或者创作者不对")
+		}
+		return tx.Model(&PublishedArticle{}).
+			Where("id = ?", id).
+			Updates(map[string]any{
+				"utime":  now,
+				"status": status,
+			}).Error
+	})
 }
 
 type Article struct {

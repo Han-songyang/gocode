@@ -12,7 +12,7 @@ type ArticleRepository interface {
 	Create(ctx context.Context, art domain.Article) (int64, error)
 	Update(ctx context.Context, art domain.Article) error
 	Sync(ctx context.Context, art domain.Article) (int64, error)
-	//Sync(ctx context.Context, art domain.Article) (int64, error)
+	SyncStatus(ctx context.Context, uid int64, id int64, status domain.ArticleStatus) error
 	//SyncStatus(ctx context.Context, uid int64, id int64, status domain.ArticleStatus) error
 	//GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	//GetById(ctx context.Context, id int64) (domain.Article, error)
@@ -30,6 +30,11 @@ type CachedArticleRepository struct {
 	authorDAO dao.ArticleAuthorDAO
 	//
 	db *gorm.DB
+}
+
+func (c *CachedArticleRepository) SyncStatus(ctx context.Context, uid int64, id int64, status domain.ArticleStatus) error {
+	err := c.dao.SyncStatus(ctx, uid, id, status.ToUint8())
+	return err
 }
 
 func NewCachedArticleRepository(dao dao.ArticleDAO) ArticleRepository {
@@ -93,6 +98,11 @@ func (c *CachedArticleRepository) SyncV1(ctx context.Context, art domain.Article
 }
 
 func (c *CachedArticleRepository) Sync(ctx context.Context, art domain.Article) (int64, error) {
+	id, err := c.dao.Sync(ctx, c.toEntity(art))
+	return id, err
+}
+
+func (c *CachedArticleRepository) SyncV2(ctx context.Context, art domain.Article) (int64, error) {
 	tx := c.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return 0, tx.Error
@@ -131,8 +141,7 @@ func (c *CachedArticleRepository) toEntity(art domain.Article) dao.Article {
 		Title:    art.Title,
 		Content:  art.Content,
 		AuthorId: art.Author.Id,
-		//Status:   uint8(art.Status),
-		Status: art.Status.ToUint8(),
+		Status:   art.Status.ToUint8(),
 	}
 }
 
