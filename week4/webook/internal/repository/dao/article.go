@@ -13,10 +13,9 @@ type ArticleDAO interface {
 	UpdateById(ctx context.Context, art Article) error
 	Sync(ctx context.Context, art Article) (int64, error)
 	SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
-	//SyncStatus(ctx context.Context, uid int64, id int64, status uint8) error
-	//GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]Article, error)
-	//GetById(ctx context.Context, id int64) (Article, error)
-	//GetPubById(ctx context.Context, id int64) (PublishedArticle, error)
+	GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]Article, error)
+	GetById(ctx context.Context, id int64) (Article, error)
+	GetPubById(ctx context.Context, id int64) (PublishedArticle, error)
 }
 
 type ArticleGORMDAO struct {
@@ -118,6 +117,32 @@ func (a *ArticleGORMDAO) SyncStatus(ctx context.Context, uid int64, id int64, st
 				"status": status,
 			}).Error
 	})
+}
+
+func (a *ArticleGORMDAO) GetByAuthor(ctx context.Context, uid int64, offset int, limit int) ([]Article, error) {
+	var arts []Article
+	err := a.db.WithContext(ctx).
+		Where("author_id = ?", uid).
+		Offset(offset).Limit(limit).
+		// a ASC, B DESC
+		Order("utime DESC").
+		Find(&arts).Error
+	return arts, err
+}
+
+func (a *ArticleGORMDAO) GetById(ctx context.Context, id int64) (Article, error) {
+	var art Article
+	err := a.db.WithContext(ctx).
+		Where("id = ?", id).First(&art).Error
+	return art, err
+}
+
+func (a *ArticleGORMDAO) GetPubById(ctx context.Context, id int64) (PublishedArticle, error) {
+	var res PublishedArticle
+	err := a.db.WithContext(ctx).
+		Where("id = ?", id).
+		First(&res).Error
+	return res, err
 }
 
 type Article struct {

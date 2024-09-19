@@ -210,7 +210,7 @@ func TestUserHandler_SignUp(t *testing.T) {
 
 			// 准备服务器，注册路由
 			server := gin.Default()
-			hdl.Register(server)
+			hdl.RegisterRoutes(server)
 
 			// 准备Req和记录的 recorder
 			req := tc.reqBuilder(t)

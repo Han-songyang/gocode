@@ -12,7 +12,7 @@ func main() {
 	initLogger()
 	server := InitWebServer()
 
-	_ = server.Run(":8081")
+	_ = server.Run(":8080")
 }
 
 func initLogger() {

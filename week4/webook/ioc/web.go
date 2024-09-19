@@ -22,7 +22,7 @@ func InitWebServer(mdls []gin.HandlerFunc,
 ) *gin.Engine {
 	server := gin.Default()
 	server.Use(mdls...)
-	userHdl.Register(server)
+	userHdl.RegisterRoutes(server)
 	wechatHdl.RegisterRoutes(server)
 	articleHdl.RegisterRoutes(server)
 	return server

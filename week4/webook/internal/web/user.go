@@ -42,7 +42,7 @@ func NewUserHandler(hdl ijwt.Handler,
 	}
 }
 
-func (u *UserHandler) Register(server *gin.Engine) {
+func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 
 	ug.GET("/ping", func(ctx *gin.Context) {
