@@ -29,7 +29,12 @@ func InitDB(l logger.Logger) *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
-	err = db.AutoMigrate(&dao.User{}, &dao.Article{}, &dao.PublishedArticle{})
+	err = db.AutoMigrate(&dao.User{},
+		&dao.Article{},
+		&dao.PublishedArticle{},
+		&dao.Interactive{},
+		&dao.UserLikeBiz{},
+	)
 	if err != nil {
 		panic(err)
 	}

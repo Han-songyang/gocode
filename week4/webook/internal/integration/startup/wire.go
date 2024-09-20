@@ -25,47 +25,67 @@ var userSvcProvider = wire.NewSet(
 	repository.NewCachedUserRepository,
 	service.NewUserService)
 
+var articlSvcProvider = wire.NewSet(
+	repository.NewCachedArticleRepository,
+	cache.NewArticleRedisCache,
+	dao.NewArticleGORMDAO,
+	service.NewArticleService)
+
+var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO,
+	cache.NewInteractiveRedisCache,
+	repository.NewCachedInteractiveRepository,
+	service.NewInteractiveService,
+)
+
 func InitWebServer() *gin.Engine {
 	wire.Build(
-		// 第三方依赖
-		InitRedis, InitDB,
-		ioc.InitLogger,
-		// DAO 部分
-		dao.NewUserDAO,
-		dao.NewArticleGORMDAO,
-
+		thirdPartySet,
+		userSvcProvider,
+		articlSvcProvider,
+		interactiveSvcSet,
 		// cache 部分
-		cache.NewRedisCodeCache, cache.NewUserCache,
+		cache.NewRedisCodeCache,
 
 		// repository 部分
-		repository.NewCachedUserRepository,
 		repository.NewCodeRepository,
-		repository.NewCachedArticleRepository,
 
 		// Service 部分
 		ioc.InitSms,
-		ioc.InitWechatService,
-		service.NewUserService,
 		service.NewCodeService,
-		service.NewArticleService,
+		InitWechatService,
 
 		// handler 部分
 		web.NewUserHandler,
 		web.NewArticleHandler,
-		ijwt.NewRedisJWTHandler,
 		web.NewOAuth2WechatHandler,
+		ijwt.NewRedisJWTHandler,
 		ioc.InitGinMiddlewares,
 		ioc.InitWebServer,
 	)
 	return gin.Default()
 }
 
+//func InitAsyncSmsService(svc sms.Service) *async.Service {
+//	wire.Build(thirdPartySet, repository.NewAsyncSMSRepository,
+//		dao.NewGORMAsyncSmsDAO,
+//		async.NewService,
+//	)
+//	return &async.Service{}
+//}
+
 func InitArticleHandler(dao dao.ArticleDAO) *web.ArticleHandler {
 	wire.Build(
 		thirdPartySet,
-		//userSvcProvider,
+		userSvcProvider,
+		interactiveSvcSet,
 		repository.NewCachedArticleRepository,
+		cache.NewArticleRedisCache,
 		service.NewArticleService,
 		web.NewArticleHandler)
 	return &web.ArticleHandler{}
+}
+
+func InitInteractiveService() service.InteractiveService {
+	wire.Build(thirdPartySet, interactiveSvcSet)
+	return service.NewInteractiveService(nil)
 }
