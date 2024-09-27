@@ -9,9 +9,15 @@ import (
 
 type InteractiveDAO interface {
 	IncrReadCnt(ctx context.Context, biz string, id int64) error
+	BatchIncrReadCnt(ctx context.Context, bizs []string, bizIds []int64) error
 	InsertLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
 	DeleteLikeInfo(ctx context.Context, biz string, id int64, uid int64) error
 	InsertCollectionBiz(ctx context.Context, cb UserCollectionBiz) error
+	Get(ctx context.Context, biz string, id int64) (Interactive, error)
+	GetLikeInfo(ctx context.Context,
+		biz string, id int64, uid int64) (UserLikeBiz, error)
+	GetCollectInfo(ctx context.Context,
+		biz string, id int64, uid int64) (UserCollectionBiz, error)
 }
 
 type GORMInteractiveDAO struct {
@@ -36,6 +42,19 @@ func (dao *GORMInteractiveDAO) IncrReadCnt(ctx context.Context, biz string, id i
 		Utime:   now,
 		Ctime:   now,
 	}).Error
+}
+
+func (dao *GORMInteractiveDAO) BatchIncrReadCnt(ctx context.Context, bizs []string, bizIds []int64) error {
+	return dao.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		txDAO := NewGORMInteractiveDAO(tx)
+		for i := 0; i < len(bizs); i++ {
+			err := txDAO.IncrReadCnt(ctx, bizs[i], bizIds[i])
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func (dao *GORMInteractiveDAO) InsertLikeInfo(ctx context.Context,
@@ -118,6 +137,33 @@ func (dao *GORMInteractiveDAO) InsertCollectionBiz(ctx context.Context,
 			Utime:      now,
 		}).Error
 	})
+}
+
+func (dao *GORMInteractiveDAO) Get(ctx context.Context, biz string, id int64) (Interactive, error) {
+	var res Interactive
+	err := dao.db.WithContext(ctx).
+		Where("biz = ? AND biz_id = ?", biz, id).
+		First(&res).Error
+	return res, err
+}
+
+func (dao *GORMInteractiveDAO) GetLikeInfo(ctx context.Context,
+	biz string, id int64, uid int64) (UserLikeBiz, error) {
+	var res UserLikeBiz
+	err := dao.db.WithContext(ctx).
+		Where("biz = ? AND biz_id = ? AND uid = ? AND status = ?",
+			biz, id, uid, 1).
+		First(&res).Error
+	return res, err
+}
+
+func (dao *GORMInteractiveDAO) GetCollectInfo(ctx context.Context,
+	biz string, id int64, uid int64) (UserCollectionBiz, error) {
+	var res UserCollectionBiz
+	err := dao.db.WithContext(ctx).
+		Where("biz = ? AND biz_id = ? AND uid = ?", biz, id, uid).
+		First(&res).Error
+	return res, err
 }
 
 type Interactive struct {

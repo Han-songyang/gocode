@@ -11,9 +11,9 @@ type ArticleVo struct {
 	Ctime      string `json:"ctime,omitempty"`
 	Utime      string `json:"utime,omitempty"`
 
-	//ReadCnt    int64 `json:"readCnt"`
-	//LikeCnt    int64 `json:"likeCnt"`
-	//CollectCnt int64 `json:"collectCnt"`
-	//Liked      bool  `json:"liked"`
-	//Collected  bool  `json:"collected"`
+	ReadCnt    int64 `json:"readCnt"`
+	LikeCnt    int64 `json:"likeCnt"`
+	CollectCnt int64 `json:"collectCnt"`
+	Liked      bool  `json:"liked"`
+	Collected  bool  `json:"collected"`
 }
